@@ -1,0 +1,37 @@
+name: WhatsApp Bot (Safe 24/7)
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"      # every 6 hours (backup restart)
+  workflow_dispatch:           # manual run
+
+jobs:
+  run-whatsapp-bot:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: whatsapp-bot-runner
+      cancel-in-progress: true   # always 1 bot, avoid duplicate sessions
+
+    env:
+      SESSION_ID: ${{ secrets.SESSION_ID }}   # load SESSION_ID from GitHub Secrets
+      BOT_NUMBER: ${{ secrets.BOT_NUMBER }}
+      DATABASE: ${{ secrets.DATABASE }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run WhatsApp bot
+        run: |
+          echo "Starting WhatsApp bot..."
+          # Run bot safely, auto-exit before GitHub 6h limit
+          timeout 350m node start.js
